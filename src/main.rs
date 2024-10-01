@@ -1,4 +1,4 @@
-mod location_type;
+mod models;
 
 fn main() {
     println!("Hello, world!");
