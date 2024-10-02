@@ -1,6 +1,6 @@
 # Labwhere
 
-This is a rebuild of [Sanger Labwhere](https://github.com/sanger/labwhere)
+This is a rebuild of [Sanger Labwhere](https://github.com/sanger/labwhere). It is a service which allows laboratory users to track labware.
 
 It is a proof of concept:
 - Service only (no User Interface)
