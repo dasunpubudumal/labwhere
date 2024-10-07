@@ -82,6 +82,7 @@ mod tests {
         assert!(Location::new(1, "location one".to_string()).is_ok());
         assert!(Location::new(1, "location-one".to_string()).is_ok());
         assert!(Location::new(1, "location-one one".to_string()).is_ok());
+        assert!(Location::new(1, "(A location)".to_string()).is_ok());
 
         assert!(Location::new(1, "A location +++".to_string()).is_err());
         assert!(Location::new(1, "A/location".to_string()).is_err());
