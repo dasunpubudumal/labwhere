@@ -28,8 +28,12 @@ impl Location {
         Ok(Location { id, name, barcode: "".to_string() })
     }
 
+    /// Validate the name of the location for a certain format
     fn validate_name(name: String) -> bool {
         if name.len() == 0 {
+            return false
+        }
+        if name.len() > 60 {
             return false
         }
         let re = Regex::new(r"\A[\w\-\s()]+\z").unwrap();
@@ -82,6 +86,14 @@ mod tests {
         assert!(Location::new(1, "A location +++".to_string()).is_err());
         assert!(Location::new(1, "A/location".to_string()).is_err());
         assert!(Location::new(1, "A location ~".to_string()).is_err());
+    }
+
+    #[test]
+    fn test_location_name_length() {
+        assert!(Location::new(1,"".to_string()).is_err());
+        assert!(Location::new(1,"a".repeat(59)).is_ok());
+        assert!(Location::new(1,"a".repeat(60)).is_ok());
+        assert!(Location::new(1, "a".repeat(61)).is_err());
     }
 
 }
