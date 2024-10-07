@@ -1,9 +1,10 @@
 
 /// LocationType struct  
 /// A LocationType is a type of location, e.g. Building, Room, etc.
-struct LocationType {
+#[derive(Debug)]
+pub struct LocationType {
   /// The unique identifier for the LocationType
-  id: u32,
+  pub id: u32,
   /// The unique name of the LocationType
   name: String,
 }
@@ -19,6 +20,12 @@ impl LocationType {
   /// ```
   fn new(id: u32, name: String) -> LocationType {
     LocationType { id, name }
+  }
+}
+
+impl Default for LocationType {
+  fn default() -> LocationType {
+    LocationType { id: 1, name: "".to_string() }
   }
 }
 

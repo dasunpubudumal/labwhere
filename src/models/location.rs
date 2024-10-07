@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use regex::Regex;
+use crate::models::location_type::LocationType;
 
 /// Location of the Labware
 #[derive(Debug)]
@@ -10,7 +11,8 @@ struct Location {
     /// Name of the location
     name: String,
     /// The barcode of the location
-    barcode: String
+    barcode: String,
+    location_type: LocationType
 }
 
 /// Implementation of the Location struct
@@ -28,7 +30,8 @@ impl Location {
         let location = Location {
             id,
             name: name.clone(),
-            barcode: format!("lw-{}-{}", name.clone().trim().replace(" ", "-").to_lowercase(), id)
+            barcode: format!("lw-{}-{}", name.clone().trim().replace(" ", "-").to_lowercase(), id),
+            location_type: Default::default()
         };
         Ok(location)
     }
@@ -79,6 +82,7 @@ mod tests {
         assert_eq!(location.id, 1);
         assert_eq!(location.name, "location 1");
         assert_eq!(location.barcode, "lw-location-1-1");
+        assert_eq!(location.location_type.id, 1);
     }
 
     #[test]
