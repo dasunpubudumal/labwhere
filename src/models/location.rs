@@ -25,7 +25,12 @@ impl Location {
         if !Location::validate_name(name.clone()) {
             return Err(NameFormatError { message: "Invalid name format".to_string() });
         }
-        Ok(Location { id, name, barcode: "".to_string() })
+        let location = Location {
+            id,
+            name: name.clone(),
+            barcode: format!("lw-{}-{}", name.clone().trim().replace(" ", "-").to_lowercase(), id)
+        };
+        Ok(location)
     }
 
     /// Validate the name of the location for a certain format
@@ -73,7 +78,7 @@ mod tests {
         let location = location.unwrap();
         assert_eq!(location.id, 1);
         assert_eq!(location.name, "location 1");
-        assert_eq!(location.barcode, "");
+        assert_eq!(location.barcode, "lw-location-1-1");
     }
 
     #[test]
@@ -97,4 +102,10 @@ mod tests {
         assert!(Location::new(1, "a".repeat(61)).is_err());
     }
 
+    #[test]
+    fn test_barcode_sanitisation() {
+        assert_eq!("lw-location1-1", Location::new(1, "location1".to_string()).unwrap().barcode);
+        assert_eq!("lw-location-1-1", Location::new(1, "location 1".to_string()).unwrap().barcode);
+        assert_eq!("lw-location1-1", Location::new(1, "Location1".to_string()).unwrap().barcode);
+    }
 }
