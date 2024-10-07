@@ -12,6 +12,7 @@ struct Location {
     name: String,
     /// The barcode of the location
     barcode: String,
+    /// The type of location
     location_type: LocationType
 }
 
@@ -37,18 +38,14 @@ impl Location {
     }
 
     /// Validate the name of the location for a certain format
+    /// Validations:
+    ///     1. Name must be between 1 and 60 characters
+    ///     2. Name must only contain alphanumeric characters, hyphens, spaces, and parentheses
     fn validate_name(name: String) -> bool {
-        if name.len() == 0 {
+        if !(1..=60).contains(&name.len()) {
             return false
         }
-        if name.len() > 60 {
-            return false
-        }
-        let re = Regex::new(r"\A[\w\-\s()]+\z").unwrap();
-        if re.is_match(&name) {
-            return true;
-        }
-        false
+        Regex::new(r"\A[\w\-\s()]+\z").unwrap().is_match(&name)
     }
 }
 
