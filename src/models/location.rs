@@ -49,6 +49,7 @@ impl Location {
     }
 }
 
+/// Error struct for containing name formatting errors
 struct NameFormatError {
     message: String
 }
