@@ -28,6 +28,8 @@ impl Location {
     /// 
     /// let location_result_2 = Location::new(1, "Building".to_string()); // Returns a Result
     /// let location = match location_result_2 {
+    ///     // References on Panic or not to panic?
+    ///     // https://doc.rust-lang.org/beta/book/ch09-03-to-panic-or-not-to-panic.html
     ///     Err(e) => panic!("{:?}", e),
     ///     Ok(result) => result
     /// };
