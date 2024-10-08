@@ -40,10 +40,15 @@ impl Location {
         let location = Location {
             id,
             name: name.clone(),
-            barcode: format!("lw-{}-{}", name.clone().trim().replace(" ", "-").to_lowercase(), id),
+            barcode: Location::create_barcode(&name, &id),
             location_type: Default::default()
         };
         Ok(location)
+    }
+
+    /// Creates a barcode
+    fn create_barcode(name: &String, id: &u32) -> String {
+        return format!("lw-{}-{}", name.clone().trim().replace(" ", "-").to_lowercase(), id.clone());
     }
 
     /// Validate the name of the location for a certain format
