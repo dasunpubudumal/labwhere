@@ -23,7 +23,7 @@ impl Location {
     ///
     /// ```
     /// use location::Location;
-    /// let location = Location::new(1, "Building".to_string(),
+    /// let location = Location::new(1, "Building".to_string())
     fn new(id: u32, name: String) -> Result<Location, NameFormatError> {
         if !Location::validate_name(name.clone()) {
             return Err(NameFormatError { message: "Invalid name format".to_string() });
