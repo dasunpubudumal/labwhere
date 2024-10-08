@@ -23,7 +23,14 @@ impl Location {
     ///
     /// ```
     /// use location::Location;
-    /// let location = Location::new(1, "Building".to_string())
+    /// let location_result_1 = Location::new(1, "Building".to_string()); // Returns a Result
+    /// let location = location_result_1.unwrap();    // Call unwrap or use match with Err and Ok branches.
+    /// 
+    /// let location_result_2 = Location::new(1, "Building".to_string()); // Returns a Result
+    /// let location = match location_result_2 {
+    ///     Err(e) => panic!("{:?}", e),
+    ///     Ok(result) => result
+    /// };
     fn new(id: u32, name: String) -> Result<Location, NameFormatError> {
         if !Location::validate_name(name.clone()) {
             return Err(NameFormatError { message: "Invalid name format".to_string() });
