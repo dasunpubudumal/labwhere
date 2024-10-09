@@ -47,6 +47,7 @@ impl Location {
     }
 
     /// Creates a barcode
+    /// Barcode format: `lw-{name trimmed and spaces replaced with "-"}-{id}`
     fn create_barcode(name: &String, id: &u32) -> String {
         return format!("lw-{}-{}", name.clone().trim().replace(" ", "-").to_lowercase(), id.clone());
     }
@@ -65,6 +66,7 @@ impl Location {
 
 /// Error struct for containing name formatting errors
 struct NameFormatError {
+    /// Message contained within the exception
     message: String
 }
 
