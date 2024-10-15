@@ -178,3 +178,4 @@ mod tests {
         assert_eq!(location.barcode, "lw-unknown-999");
     }
 }
+
