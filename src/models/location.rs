@@ -127,3 +127,4 @@ mod tests {
         assert_eq!("lw-location1-1", Location::new(1, "Location1".to_string()).unwrap().barcode);
     }
 }
+
