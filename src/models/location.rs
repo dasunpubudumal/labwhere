@@ -1,8 +1,30 @@
 use crate::models::location_type::LocationType;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use PartialEq;
+
+/// The `UNKNOWN_LOCATION` constant is initialized only when it is first accessed. 
+///  This can save resources if the constant is not used during the execution of the program.
+/// Lazy ensures that the initialization is thread-safe. 
+///  If multiple threads try to access UNKNOWN_LOCATION at the same time, Lazy guarantees that the initialization happens only once.
+/// The `Box<Location>` involves heap allocation. 
+///  Using Lazy ensures that this allocation happens only when necessary, avoiding unnecessary memory usage if the constant is never used.
+/// The initialization of `UNKNOWN_LOCATION` involves creating a `Location` struct with specific values. 
+///  Lazy allows you to encapsulate this initialization logic in a closure, making the code cleaner and more maintainable.
+/// 
+/// `one_cell` is coming into the standard Rust library (it is already in the nightly build).
+/// 
+/// `static` keyword: https://doc.rust-lang.org/std/keyword.static.html
+pub(crate) static UNKNOWN_LOCATION: Lazy<Box<Location>> = Lazy::new(|| {
+    Box::new(Location {
+        id: 999,
+        name: "UNKNOWN".to_string(),
+        barcode: "".to_string(),
+        location_type: LocationType::default(),
+    })
+});
 
 /// Location of the Labware
 #[derive(Debug, PartialEq)]
@@ -10,7 +32,7 @@ pub struct Location {
     /// ID of the location record
     id: u32,
     /// Name of the location
-    name: String,
+    pub name: String,
     /// The barcode of the location
     barcode: String,
     /// The type of location
@@ -178,4 +200,3 @@ mod tests {
         assert_eq!(location.barcode, "lw-unknown-999");
     }
 }
-

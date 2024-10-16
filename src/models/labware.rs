@@ -1,5 +1,7 @@
 use crate::models::location::Location;
 
+use super::location::UNKNOWN_LOCATION;
+
 /// Labware is stored in a location.
 /// LabWhere needs to know nothing about it apart from its barcode and where it is.
 /// If a labware has no location it's location will be set to unknown automatically
@@ -22,11 +24,11 @@ impl<'a> Labware<'a> {
     /// let labware = Labware::new(1, "trac-1".to_string(), location);
     /// ```
     ///
-    fn new(id: u32, barcode: String, location: Option<&Location>) -> Labware {
+    fn new(id: u32, barcode: String, location: Option<&'a Location>) -> Labware {
         Labware {
             id,
             barcode,
-            location: location.unwrap(),
+            location: location.unwrap_or(&UNKNOWN_LOCATION),
         }
     }
 }
@@ -44,11 +46,11 @@ mod tests {
         assert_eq!(*labware.location, location);
     }
 
-    #[ignore]
     #[test]
     fn test_labware_no_location() {
         let labware = Labware::new(1, "lw-1".to_string(), None);
         assert_eq!(labware.id, 1);
         assert_eq!(labware.barcode, "lw-1");
+        assert_eq!(labware.location.name, "UNKNOWN".to_string());
     }
 }
