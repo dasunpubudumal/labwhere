@@ -46,11 +46,13 @@ mod tests {
         assert_eq!(*labware.location, location);
     }
 
+    // We should have an equal function for the Labware struct that relies on the attributes of the
+    // struct. This will allow us to compare two Labware structs and check if they are equal.
     #[test]
     fn test_labware_no_location() {
         let labware = Labware::new(1, "lw-1".to_string(), None);
         assert_eq!(labware.id, 1);
         assert_eq!(labware.barcode, "lw-1");
-        assert_eq!(labware.location.name, "UNKNOWN".to_string());
+        assert_eq!(*labware.location, *UNKNOWN_LOCATION.as_ref());
     }
 }
