@@ -21,7 +21,7 @@ pub(crate) static UNKNOWN_LOCATION: Lazy<Box<Location>> = Lazy::new(|| {
     Box::new(Location {
         id: 999,
         name: "UNKNOWN".to_string(),
-        barcode: "".to_string(),
+        barcode: Location::create_barcode(&"UNKNOWN".to_string(), &999),
         location_type: LocationType::default(),
     })
 });
@@ -40,7 +40,7 @@ pub struct Location {
 }
 
 /// Implementation of the Location struct
-impl Location {
+impl<'a> Location {
     /// Create a new Location
     /// # Examples
     ///
@@ -78,13 +78,8 @@ impl Location {
     /// let location = Location::unknown();
     /// ```
     ///
-    pub fn unknown() -> Location {
-        Location {
-            id: 999,
-            name: "UNKNOWN".to_string(),
-            barcode: format!("lw-unknown-{}", 999),
-            location_type: Default::default(),
-        }
+    pub fn unknown() -> &'a Location {
+        UNKNOWN_LOCATION.as_ref()
     }
 
     /// Creates a barcode
