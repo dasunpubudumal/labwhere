@@ -5,17 +5,17 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use PartialEq;
 
-/// The `UNKNOWN_LOCATION` constant is initialized only when it is first accessed. 
+/// The `UNKNOWN_LOCATION` constant is initialized only when it is first accessed.
 ///  This can save resources if the constant is not used during the execution of the program.
-/// Lazy ensures that the initialization is thread-safe. 
+/// Lazy ensures that the initialization is thread-safe.
 ///  If multiple threads try to access UNKNOWN_LOCATION at the same time, Lazy guarantees that the initialization happens only once.
-/// The `Box<Location>` involves heap allocation. 
+/// The `Box<Location>` involves heap allocation.
 ///  Using Lazy ensures that this allocation happens only when necessary, avoiding unnecessary memory usage if the constant is never used.
-/// The initialization of `UNKNOWN_LOCATION` involves creating a `Location` struct with specific values. 
+/// The initialization of `UNKNOWN_LOCATION` involves creating a `Location` struct with specific values.
 ///  Lazy allows you to encapsulate this initialization logic in a closure, making the code cleaner and more maintainable.
-/// 
+///
 /// `one_cell` is coming into the standard Rust library (it is already in the nightly build).
-/// 
+///
 /// `static` keyword: https://doc.rust-lang.org/std/keyword.static.html
 pub(crate) static UNKNOWN_LOCATION: Lazy<Box<Location>> = Lazy::new(|| {
     Box::new(Location {

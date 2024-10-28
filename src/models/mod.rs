@@ -1,3 +1,3 @@
 mod labware;
 mod location;
-mod location_type;
+pub mod location_type;
