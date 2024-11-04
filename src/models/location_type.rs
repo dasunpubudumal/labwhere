@@ -37,13 +37,30 @@ impl Default for LocationType {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use crate::db::init_test_db;
 
     #[test]
     fn test_location_type_new() {
         let location_type = LocationType::new(1, "Building".to_string());
         assert_eq!(location_type.id, 1);
         assert_eq!(location_type.name, "Building");
+    }
+
+    #[tokio::test]
+    async fn test_create_location_type() {
+        let mut conn = init_test_db().await.unwrap();
+        let insert_query_result =
+            sqlx::query("INSERT INTO LOCATION_TYPES (id, name) VALUES (?, ?)")
+                .bind(150_i64)
+                .bind("Freezer")
+                .execute(&mut conn)
+                .await;
+        let location_types_result =
+            sqlx::query_as::<_, LocationType>("SELECT * FROM LOCATION_TYPES")
+                .fetch_all(&mut conn)
+                .await;
+        let location_types = location_types_result.unwrap();
+        assert_eq!(location_types.len(), 1);
     }
 }
