@@ -64,8 +64,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_location_type() {
-        let mut conn = init_test_db("sqlite::memory:").await.unwrap();
-
+        let conn = init_test_db("sqlite::memory:").await.unwrap();
         let location_type = LocationType::create("Freezer".to_string(), conn)
             .await
             .unwrap();
