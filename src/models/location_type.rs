@@ -5,10 +5,8 @@ use PartialEq;
 #[derive(Debug, PartialEq, sqlx::FromRow)]
 pub struct LocationType {
     /// The unique identifier for the LocationType
-    #[sqlx(rename = "ID")]
     pub id: u32,
     /// The unique name of the LocationType
-    #[sqlx(rename = "NAME")]
     name: String,
 }
 
