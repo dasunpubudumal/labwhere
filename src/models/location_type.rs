@@ -24,6 +24,12 @@ impl LocationType {
         LocationType { id, name }
     }
 
+    /// Create a new LocationType
+    /// # Examples
+    /// ```
+    /// use location_type::LocationType;
+    /// let locationType = LocationType::create("Building".to_string()).await.unwrap();
+    /// ```
     async fn create(name: String, mut connection: SqliteConnection) -> Result<LocationType, sqlx::Error> {
         let insert_query_result =
             sqlx::query("INSERT INTO LOCATION_TYPES (name) VALUES (?)")
@@ -48,7 +54,6 @@ impl Default for LocationType {
 mod tests {
     use super::*;
     use crate::db::init_test_db;
-    use crate::models::location_type;
 
     #[test]
     fn test_location_type_new() {
