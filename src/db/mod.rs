@@ -19,8 +19,8 @@ use std::fs;
 ///     let location_types = location_types_result.unwrap();
 ///     assert_eq!(location_types.len(), 1);
 /// }
-pub(crate) async fn init_test_db() -> Result<SqliteConnection, Error> {
-    let mut connection = SqliteConnection::connect("sqlite::memory:").await?;
+pub(crate) async fn init_test_db(url: &str) -> Result<SqliteConnection, Error> {
+    let mut connection = SqliteConnection::connect(url).await?;
     let schemas =
         fs::read_to_string("./src/db/schema.sql").expect("Something went wrong reading the file");
     sqlx::query(&schemas).execute(&mut connection).await?;
