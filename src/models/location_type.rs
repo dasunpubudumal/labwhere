@@ -1,5 +1,5 @@
-use PartialEq;
 use sqlx::{Connection, SqliteConnection};
+use PartialEq;
 
 /// LocationType struct
 /// A LocationType is a type of location, e.g. Building, Room, etc.
@@ -30,12 +30,14 @@ impl LocationType {
     /// use location_type::LocationType;
     /// let locationType = LocationType::create("Building".to_string()).await.unwrap();
     /// ```
-    async fn create(name: String, mut connection: SqliteConnection) -> Result<LocationType, sqlx::Error> {
-        let insert_query_result =
-            sqlx::query("INSERT INTO LOCATION_TYPES (name) VALUES (?)")
-                .bind(name.clone())
-                .execute(&mut connection)
-                .await?;
+    async fn create(
+        name: String,
+        mut connection: SqliteConnection,
+    ) -> Result<LocationType, sqlx::Error> {
+        let insert_query_result = sqlx::query("INSERT INTO LOCATION_TYPES (name) VALUES (?)")
+            .bind(name.clone())
+            .execute(&mut connection)
+            .await?;
         let id = insert_query_result.last_insert_rowid();
         Ok(LocationType::new(id as u32, name))
     }
