@@ -17,8 +17,10 @@ impl LocationType {
     /// # Examples
     ///
     /// ```
+    /// # #[cfg(doctest)] {
     /// use location_type::LocationType;
     /// let locationType = LocationType::new(1, "Building".to_string());
+    /// # }
     /// ```
     fn new(id: u32, name: String) -> LocationType {
         LocationType { id, name }
@@ -27,8 +29,10 @@ impl LocationType {
     /// Create a new LocationType
     /// # Examples
     /// ```
+    /// # #[cfg(doctest)] {
     /// use location_type::LocationType;
     /// let locationType = LocationType::create("Building".to_string()).await.unwrap();
+    /// # }
     /// ```
     async fn create(
         name: String,

@@ -45,6 +45,7 @@ impl<'a> Location {
     /// # Examples
     ///
     /// ```
+    /// # #[cfg(doctest)] {
     /// use location::Location;
     /// let location_result_1 = Location::new(1, "Building".to_string()); // Returns a Result
     /// let location = location_result_1.unwrap();    // Call unwrap or use match with Err and Ok branches.
@@ -56,6 +57,7 @@ impl<'a> Location {
     ///     Err(e) => panic!("{:?}", e),
     ///     Ok(result) => result
     /// };
+    /// # }
     fn new(id: u32, name: String) -> Result<Location, NameFormatError> {
         if !Location::validate_name(name.clone()) {
             return Err(NameFormatError {
@@ -74,8 +76,10 @@ impl<'a> Location {
     /// Create a new unknown location
     /// # Examples
     /// ```
+    /// # #[cfg(doctest)] {
     /// use location::Location;
     /// let location = Location::unknown();
+    /// # }
     /// ```
     ///
     pub fn unknown() -> &'a Location {

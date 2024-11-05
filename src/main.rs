@@ -1,9 +1,6 @@
-use models::location_type::LocationType;
+use labwhere::models::location_type::LocationType;
 use sqlx::{Connection, SqliteConnection};
 use std::fs;
-
-mod db;
-mod models;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
