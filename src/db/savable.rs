@@ -1,6 +1,8 @@
 use sqlx::SqliteConnection;
 
 /// Trait for saving objects to the database
+/// 
+/// This trait can only be applied to structs whose size can be computed at compile time.
 pub trait Savable: Sized {
     /// Saves the object to the database.
     /// 
