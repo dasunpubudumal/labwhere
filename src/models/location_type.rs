@@ -1,4 +1,4 @@
-use sqlx::{Connection, SqliteConnection};
+use sqlx::SqliteConnection;
 use PartialEq;
 
 /// LocationType struct
