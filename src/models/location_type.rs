@@ -59,7 +59,7 @@ impl Default for LocationType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::init_test_db;
+    use crate::db::init_db;
 
     #[test]
     fn test_location_type_new() {
@@ -70,7 +70,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_location_type() {
-        let conn = init_test_db("sqlite::memory:").await.unwrap();
+        let conn = init_db("sqlite::memory:").await.unwrap();
         let location_type = LocationType::create("Freezer".to_string(), conn)
             .await
             .unwrap();
