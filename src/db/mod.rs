@@ -6,7 +6,7 @@ use std::fs;
 /// ```
 /// #[tokio::test]
 /// async fn test_create_location_type() {
-///    let mut conn = init_db().await.unwrap();
+///    let mut conn = init_db("sqlite::memory:").await.unwrap();
 ///    let insert_query_result = sqlx::query("INSERT INTO LOCATION_TYPES (id, name) VALUES (?, ?)")
 ///         .bind(150_i64)
 ///         .bind("Freezer")
