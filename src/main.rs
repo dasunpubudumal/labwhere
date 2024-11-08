@@ -1,19 +1,11 @@
-use models::location_type::LocationType;
-use sqlx::{Connection, SqliteConnection};
-use std::fs;
-
-mod models;
+use labwhere::db::init_db;
+use labwhere::models::location_type::LocationType;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     // Another option is to use SqlitePool. A pool gives a bunch of active connections and will
     //  resolve a connection from the pool when an database operation starts.
-    let mut conn = SqliteConnection::connect("sqlite::memory:").await?;
-
-    let contents =
-        fs::read_to_string("./src/db/schema.sql").expect("Something went wrong reading the file");
-
-    sqlx::query(&contents).execute(&mut conn).await?;
+    let mut conn = init_db("sqlite::memory:").await.unwrap();
 
     sqlx::query("INSERT INTO LOCATION_TYPES (id, name) VALUES (?, ?)")
         .bind(150_i64)

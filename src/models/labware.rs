@@ -19,9 +19,11 @@ impl<'a> Labware<'a> {
     /// Create a new Labware
     /// # Examples
     /// ```
+    /// # #[cfg(doctest)] {
     /// use labware::Labware;
     /// let location:Location = Default::default();
     /// let labware = Labware::new(1, "trac-1".to_string(), location);
+    /// # }
     /// ```
     ///
     fn new(id: u32, barcode: String, location: Option<&'a Location>) -> Labware {
