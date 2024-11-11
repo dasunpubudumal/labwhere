@@ -37,7 +37,7 @@ impl<'a> Labware<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::models::labware::*;
 
     #[test]
     fn test_labware_new() {
