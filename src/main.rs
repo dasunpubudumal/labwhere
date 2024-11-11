@@ -5,7 +5,7 @@ use labwhere::models::location_type::LocationType;
 // crate. Therefore, any function that is declared in the module (e.g., `abc_module`) under `pub(crate)`
 // visibility can be accessed by the binary crate and NOT the library crate. If the module needs to be accessed
 // by both crates, it needs to be made `pub`. The binary crate depends on the library crate (which has the same 
-// name listed in Cargo.toml).
+// name listed in Cargo.toml); because stuff from library crate are imported in line 1 and 2.
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
