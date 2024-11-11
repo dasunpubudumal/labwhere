@@ -141,8 +141,7 @@ impl Error for NameFormatError {}
 
 #[cfg(test)]
 mod tests {
-
-    use super::*;
+    use crate::models::location::*;
 
     #[test]
     fn test_location_new() {

@@ -58,8 +58,8 @@ impl Default for LocationType {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::db::init_db;
+    use crate::models::location_type::LocationType;
 
     #[test]
     fn test_location_type_new() {
