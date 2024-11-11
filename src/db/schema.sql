@@ -1,21 +1,21 @@
-CREATE TABLE LOCATION_TYPES (
+CREATE TABLE location_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE LOCATIONS (
-    id INT PRIMARY KEY,
+CREATE TABLE locations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL,
-    barcode VARCHAR(255) NOT NULL,
+    barcode VARCHAR(255),
     location_type_id INT NOT NULL,
-    FOREIGN KEY (location_type_id) REFERENCES LOCATION_TYPES(id)
+    FOREIGN KEY (location_type_id) REFERENCES location_types(id)
 );
 
-CREATE TABLE LABWARES (
+CREATE TABLE labwares (
     id INT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     barcode VARCHAR(255) NOT NULL,
     location_id INT NOT NULL,
-    FOREIGN KEY (location_id) REFERENCES LOCATIONS(id)
+    FOREIGN KEY (location_id) REFERENCES locations(id)
 );
 
