@@ -1,29 +1,50 @@
-name: Deploy Rust Docs to GitHub Pages
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy cargo doc to Pages
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - add-create-to-labware
+    branches: ["add-create-to-labware"]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Run cargo doc
+        run: RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo doc --workspace --no-deps --all-features --document-private-items
+      - name: glue in an index
+        run: echo "<meta http-equiv=\"refresh\" content=\"0; url=rsdd\">" > target/doc/index.html
+      - name: Force correct file permissions
+        run: |
+          chmod -c +rX "target/doc/.lock" &
+          chmod -c -R +rX "target/doc" |
+          while read line; do
+            echo "::warning title=Invalid file permissions automatically fixed::$line"
+          done
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          toolchain: stable
-
-      - name: Build documentation
-        run: cargo doc --no-deps --document-private-items
-
+          path: 'target/doc'
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/doc
+        id: deployment
+        uses: actions/deploy-pages@v2
