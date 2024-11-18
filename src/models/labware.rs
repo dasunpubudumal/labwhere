@@ -1,5 +1,5 @@
-use sqlx::SqliteConnection;
 use crate::models::location::Location;
+use sqlx::SqliteConnection;
 
 use super::location::UNKNOWN_LOCATION;
 
@@ -44,12 +44,17 @@ impl Labware {
     /// let labware = Labware::create("trac-1".to_string(), 1, &mut connection);
     /// # }
     /// ```
-    async fn create(barcode: String, location_id: u32, connection: &mut SqliteConnection) -> Result<Labware, sqlx::Error> {
-        let insert_labware_result = sqlx::query("INSERT INTO labwares (barcode, location_id) VALUES (?, ?)")
-            .bind(barcode.clone())
-            .bind(location_id)
-            .execute(&mut *connection)
-            .await?;
+    async fn create(
+        barcode: String,
+        location_id: u32,
+        connection: &mut SqliteConnection,
+    ) -> Result<Labware, sqlx::Error> {
+        let insert_labware_result =
+            sqlx::query("INSERT INTO labwares (barcode, location_id) VALUES (?, ?)")
+                .bind(barcode.clone())
+                .bind(location_id)
+                .execute(&mut *connection)
+                .await?;
         let id = insert_labware_result.last_insert_rowid();
 
         let location = sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE id = ?")
@@ -58,6 +63,43 @@ impl Labware {
             .await?;
 
         Ok(Labware::new(id as u32, barcode, Some(&location)))
+    }
+
+    /// Updates the location of the Labware
+    /// # Examples
+    /// ```
+    /// # #[cfg(doctest)] {
+    /// use labware::Labware;
+    /// let mut connection = init_db("sqlite::memory:").await.unwrap();
+    /// let mut labware = Labware::create("trac-1".to_string(), 1, &mut connection);
+    /// let location_type = LocationType::create("Freezer".to_string(), &mut conn).await.unwrap();
+    /// let location1 = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
+    /// let location2 = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
+    /// // Update the labware now
+    /// labware.location_id = location2.id;
+    /// let updated_labware = Labware::update(&labware, &mut connection);
+    /// # }
+    async fn update(
+        labware: &Labware,
+        connection: &mut SqliteConnection,
+    ) -> Result<Labware, sqlx::Error> {
+        let update_labware_result = sqlx::query("UPDATE labwares SET location_id = ? WHERE id = ?")
+            .bind(labware.location_id)
+            .bind(labware.id)
+            .execute(&mut *connection)
+            .await?;
+        let id = update_labware_result.last_insert_rowid();
+
+        let location = sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE id = ?")
+            .bind(labware.location_id)
+            .fetch_one(&mut *connection)
+            .await?;
+
+        Ok(Labware::new(
+            id as u32,
+            labware.barcode.clone(),
+            Some(&location),
+        ))
     }
 }
 
@@ -89,11 +131,44 @@ mod tests {
     #[tokio::test]
     async fn test_create_labware() {
         let mut conn = init_db("sqlite::memory:").await.unwrap();
-        let location_type = LocationType::create("Freezer".to_string(), &mut conn).await.unwrap();
-        let location = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
-        let labware = Labware::create("lw-1".to_string(), location.id, &mut conn).await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
+            .await
+            .unwrap();
+        let location = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+        let labware = Labware::create("lw-1".to_string(), location.id, &mut conn)
+            .await
+            .unwrap();
 
         assert_eq!(labware.barcode, "lw-1");
         assert_eq!(labware.location_id, location.id);
+    }
+
+    #[tokio::test]
+    async fn update_labware() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
+            .await
+            .unwrap();
+        let location1 = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+        let location2 = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+
+        // Create the labware first.
+        let mut labware = Labware::create("lw-1".to_string(), location1.id, &mut conn)
+            .await
+            .unwrap();
+
+        // Update the location of the labware
+        labware.location_id = location2.id;
+        let updated_labware = Labware::update(&labware, &mut conn).await.unwrap();
+
+        assert_eq!(updated_labware.barcode, "lw-1");
+        assert_eq!(updated_labware.id, labware.id);
+        assert_eq!(updated_labware.location_id, location2.id);
     }
 }
