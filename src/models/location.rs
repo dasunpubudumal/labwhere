@@ -19,13 +19,13 @@ use PartialEq;
 ///
 /// `static` keyword: https://doc.rust-lang.org/std/keyword.static.html
 pub(crate) static UNKNOWN_LOCATION: Lazy<Box<Location>> = Lazy::new(|| {
-    Box::new(Location {
-        id: 999,
-        name: "UNKNOWN".to_string(),
-        barcode: Location::create_barcode(&"UNKNOWN".to_string(), &999),
-        location_type_id: 1,
-    })
-});
+    Box::new(Location::new(
+        999,
+        "UNKNOWN".to_string(),
+        1,
+        Some("lw-unknown-999".to_string()),
+    ).unwrap())
+    });
 
 /// Location of the Labware
 #[derive(Debug, PartialEq, sqlx::FromRow)]
@@ -35,7 +35,7 @@ pub struct Location {
     /// Name of the location
     pub name: String,
     /// The barcode of the location
-    barcode: String,
+    pub barcode: Option<String>,
     /// The id of the location_type
     location_type_id: u32,
 }
@@ -59,7 +59,7 @@ impl<'a> Location {
     ///     Ok(result) => result
     /// };
     /// # }
-    fn new(id: u32, name: String, location_type_id: u32) -> Result<Location, NameFormatError> {
+    fn new(id: u32, name: String, location_type_id: u32, barcode: Option<String>) -> Result<Location, NameFormatError> {
         if !Location::validate_name(name.clone()) {
             return Err(NameFormatError {
                 message: "Invalid name format".to_string(),
@@ -68,7 +68,7 @@ impl<'a> Location {
         let location = Location {
             id,
             name: name.clone(),
-            barcode: Location::create_barcode(&name, &id),
+            barcode,
             location_type_id,
         };
         Ok(location)
@@ -95,13 +95,36 @@ impl<'a> Location {
                 .await?;
         let id = insert_query_result.last_insert_rowid();
 
-        let location_type =
-            sqlx::query_as::<_, LocationType>("SELECT * FROM LOCATION_TYPES WHERE id = ?")
-                .bind(location_type_id)
-                .fetch_one(&mut *connection)
-                .await?;
+        let mut location = Location::new(id as u32, name.clone(), location_type_id, None).unwrap();
+        let barcode = location.create_barcode();
 
-        Ok(Location::new(id as u32, name, location_type.id).unwrap())
+        // Catch errors (if any) and handle
+        sqlx::query("UPDATE locations SET barcode = ? WHERE id = ?")
+            .bind(barcode)
+            .bind(id)
+            .execute(&mut *connection)
+            .await?;
+
+        Ok(location)
+    }
+
+    /// Find a location by barcode
+    /// # Examples
+    /// ```
+    /// # #[cfg(doctest)] {
+    /// use location::Location;
+    /// let mut connection = init_db("sqlite::memory:").await.unwrap();
+    /// let location = Location::find_by_barode("lw-location1-1".to_string(), &mut connection).await.unwrap();
+    /// # }
+    /// ```
+    pub(crate) async fn find_by_barode(
+        barcode: String,
+        connection: &mut SqliteConnection
+    ) -> Result<Location, sqlx::Error> {
+        sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE barcode = ?")
+            .bind(barcode)
+            .fetch_one(&mut *connection)
+            .await
     }
 
     /// Create a new unknown location
@@ -119,12 +142,16 @@ impl<'a> Location {
 
     /// Creates a barcode
     /// Barcode format: `lw-{name trimmed and spaces replaced with "-"}-{id}`
-    fn create_barcode(name: &String, id: &u32) -> String {
-        return format!(
+    fn create_barcode(&mut self) -> String {
+        let barcode =  format!(
             "lw-{}-{}",
-            name.clone().trim().replace(" ", "-").to_lowercase(),
-            id.clone()
+            self.name.trim().replace(" ", "-").to_lowercase(),
+            self.id
         );
+        self.barcode = Some(
+            barcode.clone()
+        );
+        barcode
     }
 
     /// Validate the name of the location for a certain format
@@ -144,7 +171,7 @@ impl Default for Location {
         Location {
             id: 1,
             name: "Location1".to_string(),
-            barcode: Location::create_barcode(&"Location1".to_string(), &1),
+            barcode: None,
             location_type_id: 1,
         }
     }
@@ -178,55 +205,52 @@ mod tests {
 
     #[test]
     fn test_location_new() {
-        let location = Location::new(1, "location 1".to_string(), 1);
+        let location = Location::new(1, "location 1".to_string(), 1, Some("lw-location-1-1".to_string()));
         let location = location.unwrap();
         assert_eq!(location.id, 1);
         assert_eq!(location.name, "location 1");
-        assert_eq!(location.barcode, "lw-location-1-1");
+        assert_eq!(location.barcode.clone().unwrap(), "lw-location-1-1");
         assert_eq!(location.location_type_id, 1);
     }
 
     #[test]
     fn test_location_names() {
-        assert!(Location::new(1, "location 1".to_string(), 1).is_ok());
-        assert!(Location::new(1, "location one".to_string(), 1).is_ok());
-        assert!(Location::new(1, "location-one".to_string(), 1).is_ok());
-        assert!(Location::new(1, "location-one one".to_string(), 1).is_ok());
-        assert!(Location::new(1, "(A location)".to_string(), 1).is_ok());
+        assert!(Location::new(1, "location 1".to_string(), 1, None).is_ok());
+        assert!(Location::new(1, "location one".to_string(), 1, None).is_ok());
+        assert!(Location::new(1, "location-one".to_string(), 1, None).is_ok());
+        assert!(Location::new(1, "location-one one".to_string(), 1, None).is_ok());
+        assert!(Location::new(1, "(A location)".to_string(), 1, None).is_ok());
 
-        assert!(Location::new(1, "A location +++".to_string(), 1).is_err());
-        assert!(Location::new(1, "A/location".to_string(), 1).is_err());
-        assert!(Location::new(1, "A location ~".to_string(), 1).is_err());
+        assert!(Location::new(1, "A location +++".to_string(), 1, None).is_err());
+        assert!(Location::new(1, "A/location".to_string(), 1, None).is_err());
+        assert!(Location::new(1, "A location ~".to_string(), 1, None).is_err());
     }
 
     #[test]
     fn test_location_name_length() {
-        assert!(Location::new(1, "".to_string(), 1).is_err());
-        assert!(Location::new(1, "a".repeat(59), 1).is_ok());
-        assert!(Location::new(1, "a".repeat(60), 1).is_ok());
-        assert!(Location::new(1, "a".repeat(61), 1).is_err());
+        assert!(Location::new(1, "".to_string(), 1, None).is_err());
+        assert!(Location::new(1, "a".repeat(59), 1, None).is_ok());
+        assert!(Location::new(1, "a".repeat(60), 1, None).is_ok());
+        assert!(Location::new(1, "a".repeat(61), 1, None).is_err());
     }
 
     #[test]
     fn test_barcode_sanitisation() {
-        assert_eq!(
-            "lw-location1-1",
-            Location::new(1, "location1".to_string(), 1)
-                .unwrap()
-                .barcode
-        );
-        assert_eq!(
-            "lw-location-1-1",
-            Location::new(1, "location 1".to_string(), 1)
-                .unwrap()
-                .barcode
-        );
-        assert_eq!(
-            "lw-location1-1",
-            Location::new(1, "Location1".to_string(), 1)
-                .unwrap()
-                .barcode
-        );
+
+        let mut location = Location::new(1, "location1".to_string(), 1, None).unwrap();
+        location.create_barcode();
+
+        assert_eq!("lw-location1-1", location.barcode.unwrap());
+
+        location = Location::new(1, "location 1".to_string(), 1, None).unwrap();
+        location.create_barcode();
+
+        assert_eq!("lw-location-1-1", location.barcode.unwrap());
+
+        location = Location::new(1, "Location1".to_string(), 1, None).unwrap();
+        location.create_barcode();
+
+        assert_eq!("lw-location1-1", location.barcode.unwrap());
     }
 
     #[test]
@@ -234,7 +258,7 @@ mod tests {
         let location = Location::unknown();
         assert_eq!(location.id, 999);
         assert_eq!(location.name, "UNKNOWN");
-        assert_eq!(location.barcode, "lw-unknown-999");
+        assert_eq!(location.barcode.clone().unwrap(), "lw-unknown-999");
     }
 
     #[tokio::test]
@@ -249,5 +273,19 @@ mod tests {
         assert_eq!(location.name, "location1");
         assert_eq!(location.id, 1);
         assert_eq!(location_type.id, location.location_type_id);
+    }
+
+    #[tokio::test]
+    async fn test_find_by_barcode() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
+            .await
+            .unwrap();
+        let location = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+        let found_location = Location::find_by_barode(location.barcode.clone().unwrap(), &mut conn).await.unwrap();
+
+        assert_eq!(location.barcode, found_location.barcode);
     }
 }

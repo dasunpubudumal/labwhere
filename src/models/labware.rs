@@ -44,7 +44,7 @@ impl Labware {
     /// let labware = Labware::create("trac-1".to_string(), 1, &mut connection);
     /// # }
     /// ```
-    async fn create(
+    pub(crate) async fn create(
         barcode: String,
         location_id: u32,
         connection: &mut SqliteConnection,
@@ -79,7 +79,7 @@ impl Labware {
     /// labware.location_id = location2.id;
     /// let updated_labware = Labware::update(&labware, &mut connection);
     /// # }
-    async fn update(
+    pub(crate) async fn update(
         labware: &Labware,
         connection: &mut SqliteConnection,
     ) -> Result<Labware, sqlx::Error> {
