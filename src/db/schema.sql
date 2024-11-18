@@ -12,8 +12,7 @@ CREATE TABLE locations (
 );
 
 CREATE TABLE labwares (
-    id INT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     barcode VARCHAR(255) NOT NULL,
     location_id INT NOT NULL,
     FOREIGN KEY (location_id) REFERENCES locations(id)

@@ -6,17 +6,17 @@ use super::location::UNKNOWN_LOCATION;
 /// Labware is stored in a location.
 /// LabWhere needs to know nothing about it apart from its barcode and where it is.
 /// If a labware has no location it's location will be set to unknown automatically
-struct Labware<'a> {
+struct Labware {
     /// The unique identifier for the Labware
     id: u32,
     /// The unique barcode of the Labware
     barcode: String,
-    /// The location of the Labware
-    location: &'a Location,
+    /// The location ID of the Labware
+    location_id: u32,
 }
 
 /// Implementation of the Labware struct
-impl<'a> Labware<'a> {
+impl Labware {
     /// Create a new Labware
     /// # Examples
     /// ```
@@ -27,11 +27,11 @@ impl<'a> Labware<'a> {
     /// # }
     /// ```
     ///
-    fn new(id: u32, barcode: String, location: Option<&'a Location>) -> Labware {
+    fn new(id: u32, barcode: String, location: Option<&Location>) -> Labware {
         Labware {
             id,
             barcode,
-            location: location.unwrap_or(&UNKNOWN_LOCATION),
+            location_id: location.unwrap_or(&UNKNOWN_LOCATION).id,
         }
     }
 
@@ -45,7 +45,7 @@ impl<'a> Labware<'a> {
     /// # }
     /// ```
     async fn create(barcode: String, location_id: u32, connection: &mut SqliteConnection) -> Result<Labware, sqlx::Error> {
-        let insert_labware_result = sqlx::query("INSERT INTO labware (barcode, location_id) VALUES (?, ?)")
+        let insert_labware_result = sqlx::query("INSERT INTO labwares (barcode, location_id) VALUES (?, ?)")
             .bind(barcode.clone())
             .bind(location_id)
             .execute(&mut *connection)
@@ -73,7 +73,7 @@ mod tests {
         let labware = Labware::new(1, "lw-1".to_string(), Some(&location));
         assert_eq!(labware.id, 1);
         assert_eq!(labware.barcode, "lw-1");
-        assert_eq!(*labware.location, location);
+        assert_eq!(labware.location_id, location.id);
     }
 
     // We should have an equal function for the Labware struct that relies on the attributes of the
@@ -83,7 +83,7 @@ mod tests {
         let labware = Labware::new(1, "lw-1".to_string(), None);
         assert_eq!(labware.id, 1);
         assert_eq!(labware.barcode, "lw-1");
-        assert_eq!(*labware.location, *UNKNOWN_LOCATION.as_ref());
+        assert_eq!(labware.location_id, UNKNOWN_LOCATION.as_ref().id);
     }
 
     #[tokio::test]
@@ -94,5 +94,6 @@ mod tests {
         let labware = Labware::create("lw-1".to_string(), location.id, &mut conn).await.unwrap();
 
         assert_eq!(labware.barcode, "lw-1");
+        assert_eq!(labware.location_id, location.id);
     }
 }
