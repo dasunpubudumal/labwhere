@@ -34,13 +34,13 @@ impl LocationType {
     /// let locationType = LocationType::create("Building".to_string()).await.unwrap();
     /// # }
     /// ```
-    async fn create(
+    pub(crate) async fn create(
         name: String,
-        mut connection: SqliteConnection,
+        connection: &mut SqliteConnection,
     ) -> Result<LocationType, sqlx::Error> {
-        let insert_query_result = sqlx::query("INSERT INTO LOCATION_TYPES (name) VALUES (?)")
+        let insert_query_result = sqlx::query("INSERT INTO location_types (name) VALUES (?)")
             .bind(name.clone())
-            .execute(&mut connection)
+            .execute(&mut *connection)
             .await?;
         let id = insert_query_result.last_insert_rowid();
         Ok(LocationType::new(id as u32, name))
@@ -51,7 +51,7 @@ impl Default for LocationType {
     fn default() -> LocationType {
         LocationType {
             id: 1,
-            name: "".to_string(),
+            name: "Building".to_string(),
         }
     }
 }
@@ -70,8 +70,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_location_type() {
-        let conn = init_db("sqlite::memory:").await.unwrap();
-        let location_type = LocationType::create("Freezer".to_string(), conn)
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
             .await
             .unwrap();
         assert_eq!(location_type.id, 1);
