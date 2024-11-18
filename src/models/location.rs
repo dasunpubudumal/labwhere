@@ -28,10 +28,10 @@ pub(crate) static UNKNOWN_LOCATION: Lazy<Box<Location>> = Lazy::new(|| {
 });
 
 /// Location of the Labware
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, sqlx::FromRow)]
 pub struct Location {
     /// ID of the location record
-    id: u32,
+    pub id: u32,
     /// Name of the location
     pub name: String,
     /// The barcode of the location
