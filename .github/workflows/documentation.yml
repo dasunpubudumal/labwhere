@@ -27,5 +27,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./target/doc
-          # Optional: Uncomment the following to deploy to a subdirectory (e.g., /docs)
-          # destination_dir: docs
