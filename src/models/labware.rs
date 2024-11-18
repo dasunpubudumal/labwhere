@@ -154,7 +154,7 @@ mod tests {
         let location1 = Location::create("location1".to_string(), location_type.id, &mut conn)
             .await
             .unwrap();
-        let location2 = Location::create("location1".to_string(), location_type.id, &mut conn)
+        let location2 = Location::create("location2".to_string(), location_type.id, &mut conn)
             .await
             .unwrap();
 
