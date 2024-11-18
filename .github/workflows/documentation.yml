@@ -1,0 +1,31 @@
+name: Deploy Rust Docs to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - add-create-to-labware
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build documentation
+        run: cargo doc --no-deps --document-private-items
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          # Optional: Uncomment the following to deploy to a subdirectory (e.g., /docs)
+          # destination_dir: docs
