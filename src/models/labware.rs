@@ -1,11 +1,12 @@
+use super::location::UNKNOWN_LOCATION;
+use crate::errors::NotFoundError;
 use crate::models::location::Location;
 use sqlx::SqliteConnection;
-
-use super::location::UNKNOWN_LOCATION;
 
 /// Labware is stored in a location.
 /// LabWhere needs to know nothing about it apart from its barcode and where it is.
 /// If a labware has no location it's location will be set to unknown automatically
+#[derive(Debug, PartialEq, sqlx::FromRow)]
 struct Labware {
     /// The unique identifier for the Labware
     id: u32,
@@ -101,6 +102,30 @@ impl Labware {
             Some(&location),
         ))
     }
+
+    /// Find labware by barcode
+    /// # Examples
+    /// ```
+    /// # #[cfg(doctest)] {
+    /// use labware::Labware;
+    /// let mut connection = init_db("sqlite::memory:").await.unwrap();
+    /// let labware = Labware::find_by_barcode("lw-location-1", &mut connection);
+    /// # }
+    pub(crate) async fn find_by_barcode(
+        barcode: String,
+        connection: &mut SqliteConnection,
+    ) -> Result<Labware, NotFoundError> {
+        match sqlx::query_as::<_, Labware>("SELECT * FROM labwares WHERE barcode = ?")
+            .bind(barcode)
+            .fetch_one(&mut *connection)
+            .await
+        {
+            Ok(labware) => Ok(labware),
+            Err(_) => Err(NotFoundError {
+                message: "Labware not found".to_string(),
+            }),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -170,5 +195,33 @@ mod tests {
         assert_eq!(updated_labware.barcode, "lw-1");
         assert_eq!(updated_labware.id, labware.id);
         assert_eq!(updated_labware.location_id, location2.id);
+    }
+
+    #[tokio::test]
+    async fn test_find_by_barcode() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
+            .await
+            .unwrap();
+        let location = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+        let labware = Labware::create("lw-1".to_string(), location.id, &mut conn)
+            .await
+            .unwrap();
+
+        let fetched_labware = Labware::find_by_barcode("lw-1".to_string(), &mut conn)
+            .await
+            .unwrap();
+
+        assert_eq!(labware.barcode, fetched_labware.barcode)
+    }
+
+    #[tokio::test]
+    async fn test_find_by_barcode_for_not_found() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        Labware::find_by_barcode("lw-1".to_string(), &mut conn)
+            .await
+            .expect_err("Labware not found");
     }
 }

@@ -1,3 +1,4 @@
+use crate::errors::NotFoundError;
 use crate::models::location_type::LocationType;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -19,13 +20,16 @@ use PartialEq;
 ///
 /// `static` keyword: https://doc.rust-lang.org/std/keyword.static.html
 pub(crate) static UNKNOWN_LOCATION: Lazy<Box<Location>> = Lazy::new(|| {
-    Box::new(Location::new(
-        999,
-        "UNKNOWN".to_string(),
-        1,
-        Some("lw-unknown-999".to_string()),
-    ).unwrap())
-    });
+    Box::new(
+        Location::new(
+            999,
+            "UNKNOWN".to_string(),
+            1,
+            Some("lw-unknown-999".to_string()),
+        )
+        .unwrap(),
+    )
+});
 
 /// Location of the Labware
 #[derive(Debug, PartialEq, sqlx::FromRow)]
@@ -59,7 +63,12 @@ impl<'a> Location {
     ///     Ok(result) => result
     /// };
     /// # }
-    fn new(id: u32, name: String, location_type_id: u32, barcode: Option<String>) -> Result<Location, NameFormatError> {
+    fn new(
+        id: u32,
+        name: String,
+        location_type_id: u32,
+        barcode: Option<String>,
+    ) -> Result<Location, NameFormatError> {
         if !Location::validate_name(name.clone()) {
             return Err(NameFormatError {
                 message: "Invalid name format".to_string(),
@@ -117,14 +126,20 @@ impl<'a> Location {
     /// let location = Location::find_by_barode("lw-location1-1".to_string(), &mut connection).await.unwrap();
     /// # }
     /// ```
-    pub(crate) async fn find_by_barode(
+    pub(crate) async fn find_by_barcode(
         barcode: String,
-        connection: &mut SqliteConnection
-    ) -> Result<Location, sqlx::Error> {
-        sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE barcode = ?")
+        connection: &mut SqliteConnection,
+    ) -> Result<Location, NotFoundError> {
+        match sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE barcode = ?")
             .bind(barcode)
             .fetch_one(&mut *connection)
             .await
+        {
+            Ok(location) => Ok(location),
+            Err(_) => Err(NotFoundError {
+                message: "Location not found".to_string(),
+            }),
+        }
     }
 
     /// Create a new unknown location
@@ -143,14 +158,12 @@ impl<'a> Location {
     /// Creates a barcode
     /// Barcode format: `lw-{name trimmed and spaces replaced with "-"}-{id}`
     fn create_barcode(&mut self) -> String {
-        let barcode =  format!(
+        let barcode = format!(
             "lw-{}-{}",
             self.name.trim().replace(" ", "-").to_lowercase(),
             self.id
         );
-        self.barcode = Some(
-            barcode.clone()
-        );
+        self.barcode = Some(barcode.clone());
         barcode
     }
 
@@ -205,7 +218,12 @@ mod tests {
 
     #[test]
     fn test_location_new() {
-        let location = Location::new(1, "location 1".to_string(), 1, Some("lw-location-1-1".to_string()));
+        let location = Location::new(
+            1,
+            "location 1".to_string(),
+            1,
+            Some("lw-location-1-1".to_string()),
+        );
         let location = location.unwrap();
         assert_eq!(location.id, 1);
         assert_eq!(location.name, "location 1");
@@ -236,7 +254,6 @@ mod tests {
 
     #[test]
     fn test_barcode_sanitisation() {
-
         let mut location = Location::new(1, "location1".to_string(), 1, None).unwrap();
         location.create_barcode();
 
@@ -284,8 +301,19 @@ mod tests {
         let location = Location::create("location1".to_string(), location_type.id, &mut conn)
             .await
             .unwrap();
-        let found_location = Location::find_by_barode(location.barcode.clone().unwrap(), &mut conn).await.unwrap();
+        let found_location =
+            Location::find_by_barcode(location.barcode.clone().unwrap(), &mut conn)
+                .await
+                .unwrap();
 
         assert_eq!(location.barcode, found_location.barcode);
+    }
+
+    #[tokio::test]
+    async fn test_find_by_barcode_for_not_found() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        Location::find_by_barcode("lw-location-1".to_string(), &mut conn)
+            .await
+            .expect_err("Location not found");
     }
 }
