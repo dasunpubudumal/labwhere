@@ -34,7 +34,7 @@ jobs:
       - name: Run cargo doc
         run: cargo doc --workspace --no-deps --all-features --document-private-items
       - name: glue in an index
-        run: echo "<meta http-equiv=\"refresh\" content=\"0; url=rsdd\">" > target/doc/index.html
+        run: echo "<meta http-equiv=\"refresh\" content=\"0; url=labwhere\">" > target/doc/index.html
       - name: Force correct file permissions
         run: |
           chmod -c +rX "target/doc/.lock" &
