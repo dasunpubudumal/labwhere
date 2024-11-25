@@ -1,9 +1,9 @@
-CREATE TABLE location_types (
+CREATE TABLE IF NOT EXISTS location_types  (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE locations (
+CREATE TABLE IF NOT EXISTS locations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL,
     barcode VARCHAR(255),
@@ -11,7 +11,7 @@ CREATE TABLE locations (
     FOREIGN KEY (location_type_id) REFERENCES location_types(id)
 );
 
-CREATE TABLE labwares (
+CREATE TABLE IF NOT EXISTS labwares (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     barcode VARCHAR(255) NOT NULL,
     location_id INT NOT NULL,

@@ -1,6 +1,7 @@
 use sqlx::{Connection, Error, SqliteConnection};
 use std::fs;
 
+pub mod create_db;
 pub mod savable;
 
 /// Initializes a test database and injects the schemas.
