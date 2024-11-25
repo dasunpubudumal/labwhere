@@ -7,4 +7,5 @@
 //
 // For more info, check https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html.
 pub mod db;
+pub mod errors;
 pub mod models;

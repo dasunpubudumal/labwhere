@@ -5,8 +5,8 @@ pub mod savable;
 
 /// Initializes a test database and injects the schemas.
 ///
-/// The visibility of this function **cannot** be made pub(crate) as the ancestry hierarchy of this module is is follows:
-///     db -> labwhere (lib).
+/// The visibility of this function **cannot** be made `pub(crate)`` as the ancestry hierarchy of this module is is follows:
+///     `db -> labwhere (lib)``.
 /// Therefore, making the function visibility from `pub` to `pub(crate)` will make this **only** available to
 /// the lib crate (which is under the same name as `labwhere`) but not to the binary crate. Because this initialization
 /// logic needs to run in our binary executable as well (upon application startup), we will keep this function visibility
