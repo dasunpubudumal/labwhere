@@ -15,6 +15,8 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
+// Notes
+// 1. Implement graceful shutdowns : https://hyper.rs/guides/1/server/graceful-shutdown/
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Bind the server to an address
