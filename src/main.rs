@@ -35,6 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Spawn tokio task for concurrent processing of incoming streams
         tokio::task::spawn(async move {
             if let Err(err) = http1::Builder::new()
+                // This is the global service handler.
+                // This service handler should delegate the request to the relevant endpoint
                 .serve_connection(io, service_fn(hello))
                 .await
             {
