@@ -4,16 +4,13 @@
 // by both crates, it needs to be made `pub`. The binary crate depends on the library crate (which has the same
 // name listed in Cargo.toml); because stuff from library crate are imported in line 1 and 2.
 
-use http_body_util::Full;
-use hyper::body::Bytes;
-use hyper::body::Incoming;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
-use std::convert::Infallible;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+
+pub mod services;
 
 // Notes
 // 1. Implement graceful shutdowns : https://hyper.rs/guides/1/server/graceful-shutdown/
@@ -25,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Create a TcpListener and bind the address to it.
     let listener = TcpListener::bind(address).await?;
 
-    println!("Server running");
+    println!("Server running..");
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -37,15 +34,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             if let Err(err) = http1::Builder::new()
                 // This is the global service handler.
                 // This service handler should delegate the request to the relevant endpoint
-                .serve_connection(io, service_fn(hello))
+                .serve_connection(io, service_fn(services::scan::scan))
                 .await
             {
                 eprintln!("Error serving the connection: {:?}", err);
             }
         });
     }
-}
-
-async fn hello(_: Request<Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
-    Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
 }
