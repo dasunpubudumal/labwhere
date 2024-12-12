@@ -1,32 +1,51 @@
-use labwhere::db::init_db;
-use labwhere::models::location_type::LocationType;
-
 // Any module that is imported into here (e.g., `use abc_module;`) has its ancestry as the binary
 // crate. Therefore, any function that is declared in the module (e.g., `abc_module`) under `pub(crate)`
 // visibility can be accessed by the binary crate and NOT the library crate. If the module needs to be accessed
 // by both crates, it needs to be made `pub`. The binary crate depends on the library crate (which has the same
 // name listed in Cargo.toml); because stuff from library crate are imported in line 1 and 2.
 
+use http_body_util::Full;
+use hyper::body::Bytes;
+use hyper::body::Incoming;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Request, Response};
+use hyper_util::rt::TokioIo;
+use std::convert::Infallible;
+use std::net::SocketAddr;
+use tokio::net::TcpListener;
+
+// Notes
+// 1. Implement graceful shutdowns : https://hyper.rs/guides/1/server/graceful-shutdown/
 #[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
-    // Another option is to use SqlitePool. A pool gives a bunch of active connections and will
-    //  resolve a connection from the pool when an database operation starts.
-    let mut conn = init_db("sqlite::memory:").await.unwrap();
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Bind the server to an address
+    let address = SocketAddr::from(([127, 0, 00, 1], 3000));
 
-    sqlx::query("INSERT INTO location_types (id, name) VALUES (?, ?)")
-        .bind(150_i64)
-        .bind("Freezer")
-        .execute(&mut conn)
-        .await?;
+    // Create a TcpListener and bind the address to it.
+    let listener = TcpListener::bind(address).await?;
 
-    let result: Vec<LocationType> =
-        sqlx::query_as::<_, LocationType>("SELECT * FROM location_types")
-            .fetch_all(&mut conn)
-            .await?;
+    println!("Server running");
 
-    println!("{:?}", result);
+    loop {
+        let (stream, _) = listener.accept().await?;
 
-    assert_eq!(result.len(), 1);
+        let io = TokioIo::new(stream);
 
-    Ok(())
+        // Spawn tokio task for concurrent processing of incoming streams
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                // This is the global service handler.
+                // This service handler should delegate the request to the relevant endpoint
+                .serve_connection(io, service_fn(hello))
+                .await
+            {
+                eprintln!("Error serving the connection: {:?}", err);
+            }
+        });
+    }
+}
+
+async fn hello(_: Request<Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
+    Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
 }
