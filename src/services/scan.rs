@@ -1,9 +1,10 @@
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty};
+use http_body_util::{BodyExt};
 use hyper::body::Bytes;
 use hyper::Method;
 use hyper::{Request, Response, StatusCode};
 use log::{error, info};
+use crate::services::empty;
 
 /// Receives location barcode and labware, scans them into LabWhere.
 pub async fn scan(
@@ -19,10 +20,4 @@ pub async fn scan(
             Ok(not_found)
         }
     }
-}
-
-fn empty() -> BoxBody<Bytes, hyper::Error> {
-    Empty::<Bytes>::new()
-        .map_err(|never| match never {})
-        .boxed()
 }
