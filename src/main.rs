@@ -7,7 +7,7 @@
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
-use log::{error, info};
+use log::{error, info, warn};
 use std::env;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -24,8 +24,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Read environment variable key PORT and set the value.
     // If no PORT environment varibale is set, the default is set, which is 3000.
-    let port: u16 = env::var("PORT")
-                        .map_or_else(|e| 3000, |v| v.parse().unwrap());
+    let port: u16 = env::var("PORT").map_or_else(
+        |_| {
+            warn!("Setting the default port 3000.");
+            3000
+        },
+        |v| v.parse().unwrap(),
+    );
 
     // Bind the server to an address
     let address = SocketAddr::from(([127, 0, 00, 1], port));
