@@ -4,28 +4,41 @@
 // by both crates, it needs to be made `pub`. The binary crate depends on the library crate (which has the same
 // name listed in Cargo.toml); because stuff from library crate are imported in line 1 and 2.
 
-use http_body_util::Full;
-use hyper::body::Bytes;
-use hyper::body::Incoming;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
-use std::convert::Infallible;
+use log::{error, info, warn};
+use std::env;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+
+pub mod services;
 
 // Notes
 // 1. Implement graceful shutdowns : https://hyper.rs/guides/1/server/graceful-shutdown/
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Enable logging with env_logger wrapped around with Rust's log crate.
+    // Set the logging level to INFO by default
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
+    // Read environment variable key PORT and set the value.
+    // If no PORT environment varibale is set, the default is set, which is 3000.
+    let port: u16 = env::var("PORT").map_or_else(
+        |_| {
+            warn!("Setting the default port 3000.");
+            3000
+        },
+        |v| v.parse().unwrap(),
+    );
+
     // Bind the server to an address
-    let address = SocketAddr::from(([127, 0, 00, 1], 3000));
+    let address = SocketAddr::from(([127, 0, 00, 1], port));
 
     // Create a TcpListener and bind the address to it.
     let listener = TcpListener::bind(address).await?;
 
-    println!("Server running");
+    info!("Server running on port: {:?}", port);
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -37,15 +50,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             if let Err(err) = http1::Builder::new()
                 // This is the global service handler.
                 // This service handler should delegate the request to the relevant endpoint
-                .serve_connection(io, service_fn(hello))
+                .serve_connection(io, service_fn(services::scan::scan))
                 .await
             {
-                eprintln!("Error serving the connection: {:?}", err);
+                error!("Error serving the connection: {:?}", err);
             }
         });
     }
-}
-
-async fn hello(_: Request<Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
-    Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
 }
