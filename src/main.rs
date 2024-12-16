@@ -8,6 +8,7 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use log::{error, info};
+use std::env;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
@@ -21,13 +22,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Set the logging level to INFO by default
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
+    // Read environment variable key PORT and set the value.
+    // If no PORT environment varibale is set, the default is set, which is 3000.
+    let port: u16 = env::var("PORT")
+                        .map_or_else(|e| 3000, |v| v.parse().unwrap());
+
     // Bind the server to an address
-    let address = SocketAddr::from(([127, 0, 00, 1], 3000));
+    let address = SocketAddr::from(([127, 0, 00, 1], port));
 
     // Create a TcpListener and bind the address to it.
     let listener = TcpListener::bind(address).await?;
 
-    info!("Server running on port: {:?}", 3000);
+    info!("Server running on port: {:?}", port);
 
     loop {
         let (stream, _) = listener.accept().await?;
