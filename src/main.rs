@@ -9,6 +9,7 @@ use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use log::{error, info};
 
 pub mod services;
 
@@ -16,13 +17,18 @@ pub mod services;
 // 1. Implement graceful shutdowns : https://hyper.rs/guides/1/server/graceful-shutdown/
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
+    // Enable logging with env_logger wrapped around with Rust's log crate.
+    // Set the logging level to INFO by default
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
     // Bind the server to an address
     let address = SocketAddr::from(([127, 0, 00, 1], 3000));
 
     // Create a TcpListener and bind the address to it.
     let listener = TcpListener::bind(address).await?;
 
-    println!("Server running..");
+    info!("Server running on port: {:?}", 3000);
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -37,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .serve_connection(io, service_fn(services::scan::scan))
                 .await
             {
-                eprintln!("Error serving the connection: {:?}", err);
+                error!("Error serving the connection: {:?}", err);
             }
         });
     }
