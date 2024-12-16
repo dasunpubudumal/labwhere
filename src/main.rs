@@ -7,9 +7,9 @@
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
+use log::{error, info};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use log::{error, info};
 
 pub mod services;
 
@@ -17,7 +17,6 @@ pub mod services;
 // 1. Implement graceful shutdowns : https://hyper.rs/guides/1/server/graceful-shutdown/
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
     // Enable logging with env_logger wrapped around with Rust's log crate.
     // Set the logging level to INFO by default
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
