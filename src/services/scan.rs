@@ -1,18 +1,24 @@
 use crate::services::empty;
 use http_body_util::combinators::BoxBody;
-use http_body_util::BodyExt;
+use http_body_util::{BodyExt, Full};
 use hyper::body::{Body, Bytes};
 use hyper::{Method, Request, Response, Result, StatusCode};
 use log::{error, info};
+use std::convert::Infallible;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 /// Receives location barcode and labware, scans them into LabWhere.
+/// - The incoming request implements `Send` trait as it is safe to be sent to another thread.
+/// - The incoming request implements `Sync` trait as it is safe to be used among multiple threads.
+/// This function is a service function, and is to be passed as a closure to a hyper `service_fn`
+/// call.
 pub async fn scan(
     req: Request<impl Body<Data = Bytes, Error = hyper::Error> + Send + Sync + 'static>,
 ) -> std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     info!("Processing request for /scan endpoint");
     match (req.method(), req.uri().path()) {
+        // Use https://github.com/hyperium/hyper/blob/master/examples/web_api.rs for processing the request
         (&Method::POST, "/scan") => Ok(Response::new(req.into_body().boxed())),
         _ => {
             let mut not_found = Response::new(empty());
@@ -23,6 +29,7 @@ pub async fn scan(
     }
 }
 
+/// `MockBody` is a utility body written **only** for tests.
 struct MockBody {
     data: &'static [u8],
 }
@@ -32,8 +39,6 @@ impl MockBody {
         Self { data }
     }
 }
-
-unsafe impl Send for MockBody {}
 
 impl Body for MockBody {
     type Data = Bytes;
@@ -55,7 +60,6 @@ impl Body for MockBody {
 
 #[cfg(test)]
 mod tests {
-
     use crate::services::scan::MockBody;
 
     #[tokio::test]
