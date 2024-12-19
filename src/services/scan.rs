@@ -1,10 +1,9 @@
 use crate::services::empty;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Full};
+use http_body_util::{BodyExt};
 use hyper::body::{Body, Bytes};
 use hyper::{Method, Request, Response, Result, StatusCode};
 use log::{error, info};
-use std::convert::Infallible;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
