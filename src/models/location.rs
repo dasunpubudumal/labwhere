@@ -1,5 +1,4 @@
 use crate::errors::NotFoundError;
-use crate::models::location_type::LocationType;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sqlx::SqliteConnection;
