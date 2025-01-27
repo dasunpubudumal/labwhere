@@ -2,7 +2,7 @@ use crate::services::empty;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt};
 use hyper::body::{Body, Bytes};
-use hyper::{Method, Request, Response, Result, StatusCode};
+use hyper::{Method, Request, Response, Result, StatusCode, header::CONTENT_TYPE};
 use log::{error, info};
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -16,6 +16,20 @@ pub async fn scan(
     req: Request<impl Body<Data = Bytes, Error = hyper::Error> + Send + Sync + 'static>,
 ) -> std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     info!("Processing request for /scan endpoint");
+
+    // Check if the content type is application/json
+    match req.headers().get(CONTENT_TYPE) {
+        Some(content_type) if content_type == "application/json" => {
+            // Continue with the request processing
+        },
+        _ => {
+            let mut bad_request = Response::new(empty());
+            *bad_request.status_mut() = StatusCode::BAD_REQUEST;
+            error!("Responding with bad request");
+            return Ok(bad_request);
+        }
+    }
+
     match (req.method(), req.uri().path()) {
         // Use https://github.com/hyperium/hyper/blob/master/examples/web_api.rs for processing the request
         (&Method::POST, "/scan") => Ok(Response::new(req.into_body().boxed())),
@@ -59,6 +73,8 @@ impl Body for MockBody {
 
 #[cfg(test)]
 mod tests {
+    use hyper::{header::CONTENT_TYPE, StatusCode};
+
     use crate::services::scan::MockBody;
 
     #[tokio::test]
@@ -67,9 +83,23 @@ mod tests {
         let req = hyper::Request::builder()
             .method("POST")
             .uri("/scan")
+            .header(CONTENT_TYPE, "application/json")
             .body(body)
             .unwrap();
         let res = super::scan(req).await.unwrap();
-        assert_eq!(res.status(), 200);
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_scan_without_correct_content_type() {
+        let body: MockBody = MockBody::new(b"anything");
+        let req = hyper::Request::builder()
+            .method("POST")
+            .uri("/scan")
+            .header(CONTENT_TYPE, "text/plain")
+            .body(body)
+            .unwrap();
+        let res = super::scan(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 }
