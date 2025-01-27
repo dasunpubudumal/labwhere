@@ -1,8 +1,8 @@
 use crate::services::empty;
 use http_body_util::combinators::BoxBody;
-use http_body_util::BodyExt;
+use http_body_util::{BodyExt};
 use hyper::body::{Body, Bytes};
-use hyper::{header::CONTENT_TYPE, Method, Request, Response, Result, StatusCode};
+use hyper::{Method, Request, Response, Result, StatusCode, header::CONTENT_TYPE};
 use log::{error, info};
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -21,7 +21,7 @@ pub async fn scan(
     match req.headers().get(CONTENT_TYPE) {
         Some(content_type) if content_type == "application/json" => {
             // Continue with the request processing
-        }
+        },
         _ => {
             let mut bad_request = Response::new(empty());
             *bad_request.status_mut() = StatusCode::BAD_REQUEST;
