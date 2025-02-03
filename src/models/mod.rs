@@ -3,3 +3,4 @@
 pub mod labware;
 pub mod location;
 pub mod location_type;
+pub mod scan;

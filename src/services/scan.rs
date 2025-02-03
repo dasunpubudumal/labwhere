@@ -4,6 +4,7 @@ use http_body_util::{BodyExt, Full};
 use hyper::body::{Body, Bytes};
 use hyper::{header::CONTENT_TYPE, Error, Method, Request, Response, Result, StatusCode};
 use log::{error, info};
+use serde_json::Value;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -37,7 +38,9 @@ pub async fn scan(
             let body_bytes: Bytes = boxed_body.collect().await?.to_bytes();
             let string = String::from_utf8(body_bytes.to_vec()).unwrap();
 
-            // We can deserialise it into a struct using serde_json::from_str(string)
+            let json: Value = serde_json::from_str(&string).unwrap();
+
+            println!("{:?}", json);
 
             Ok(Response::builder()
                 .header(CONTENT_TYPE, "application/json")
@@ -96,7 +99,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_scan() {
-        let body: MockBody = MockBody::new(b"anything");
+        let body: MockBody = MockBody::new(
+            b"{
+                    \"location_barcode\": \"1234\",
+                    \"labware_barcode\": \"32321\"
+            }",
+        );
         let req = hyper::Request::builder()
             .method("POST")
             .uri("/scan")
