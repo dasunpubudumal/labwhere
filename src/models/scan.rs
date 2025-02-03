@@ -15,7 +15,17 @@ impl Scan {
         }
     }
 
+    /// Creates a Scan model after validations.
+    ///
+    /// 1. Find the location by its barcode `location_barcode`.
+    /// 2. If the location doesn't exist, it would err. The service would respond to the client
+    /// depending on the error type.
+    /// 3. Find the labware by its barcode `labware_barcode`.
+    /// 4. If the labware exists, return it. If it doesn't exist, create the labware in the database.
     pub fn create(value: Value) -> Result<Scan, ()> {
+
+        // TODO: Complete this function.
+
         Ok(Scan {
             labware_barcode: "".to_string(),
             location_barcode: "".to_string(),
