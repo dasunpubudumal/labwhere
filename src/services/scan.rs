@@ -1,8 +1,8 @@
 use crate::services::empty;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt};
+use http_body_util::{BodyExt, Full};
 use hyper::body::{Body, Bytes};
-use hyper::{Method, Request, Response, Result, StatusCode, header::CONTENT_TYPE};
+use hyper::{header::CONTENT_TYPE, Error, Method, Request, Response, Result, StatusCode};
 use log::{error, info};
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -21,7 +21,7 @@ pub async fn scan(
     match req.headers().get(CONTENT_TYPE) {
         Some(content_type) if content_type == "application/json" => {
             // Continue with the request processing
-        },
+        }
         _ => {
             let mut bad_request = Response::new(empty());
             *bad_request.status_mut() = StatusCode::BAD_REQUEST;
@@ -32,7 +32,16 @@ pub async fn scan(
 
     match (req.method(), req.uri().path()) {
         // Use https://github.com/hyperium/hyper/blob/master/examples/web_api.rs for processing the request
-        (&Method::POST, "/scan") => Ok(Response::new(req.into_body().boxed())),
+        (&Method::POST, "/scan") => {
+            let boxed_body: BoxBody<Bytes, Error> = req.into_body().boxed();
+            let body_bytes: Bytes = boxed_body.collect().await?.to_bytes();
+            let string = String::from_utf8(body_bytes.to_vec()).unwrap();
+
+            Ok(Response::builder()
+                .header(CONTENT_TYPE, "application/json")
+                .body(full(string))
+                .unwrap())
+        }
         _ => {
             let mut not_found = Response::new(empty());
             *not_found.status_mut() = StatusCode::NOT_FOUND;
@@ -40,6 +49,12 @@ pub async fn scan(
             Ok(not_found)
         }
     }
+}
+
+fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
+    Full::new(chunk.into())
+        .map_err(|never| match never {})
+        .boxed()
 }
 
 /// `MockBody` is a utility body written **only** for tests.
