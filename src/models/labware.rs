@@ -1,5 +1,7 @@
 use super::location::UNKNOWN_LOCATION;
-use crate::errors::NotFoundError;
+use crate::errors::database_error::ConnectivityError;
+use crate::errors::not_found_error::NotFoundError;
+use crate::errors::LabwhereError;
 use crate::models::location::Location;
 use sqlx::SqliteConnection;
 
@@ -49,58 +51,95 @@ impl Labware {
         barcode: String,
         location_id: u32,
         connection: &mut SqliteConnection,
-    ) -> Result<Labware, sqlx::Error> {
+    ) -> Result<Labware, LabwhereError> {
         let insert_labware_result =
             sqlx::query("INSERT INTO labwares (barcode, location_id) VALUES (?, ?)")
                 .bind(barcode.clone())
                 .bind(location_id)
                 .execute(&mut *connection)
-                .await?;
-        let id = insert_labware_result.last_insert_rowid();
-
-        let location = sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE id = ?")
-            .bind(location_id)
-            .fetch_one(&mut *connection)
-            .await?;
-
-        Ok(Labware::new(id as u32, barcode, Some(&location)))
+                .await;
+        match insert_labware_result {
+            Ok(result) => {
+                let id = result.last_insert_rowid();
+                let location_result =
+                    sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE id = ?")
+                        .bind(location_id)
+                        .fetch_one(&mut *connection)
+                        .await;
+                match location_result {
+                    Ok(location) => Ok(Labware::new(id as u32, barcode, Some(&location))),
+                    Err(_) => Err(LabwhereError::NotFound(NotFoundError {
+                        message: "Location not found!".to_string(),
+                    })),
+                }
+            }
+            Err(_) => Err(LabwhereError::ConnectivityError(ConnectivityError {
+                message: "Error saving the labware!".to_string(),
+            })),
+        }
     }
 
-    /// Updates the location of the Labware
+    /// Updates the location of the Labware.
+    /// Throws LabwhereError if
+    ///     1. Location is not found.
+    ///     2. Labware is not found.
     /// # Examples
     /// ```
     /// # #[cfg(doctest)] {
-    /// use labware::Labware;
-    /// let mut connection = init_db("sqlite::memory:").await.unwrap();
-    /// let mut labware = Labware::create("trac-1".to_string(), 1, &mut connection);
-    /// let location_type = LocationType::create("Freezer".to_string(), &mut conn).await.unwrap();
-    /// let location1 = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
-    /// let location2 = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
-    /// // Update the labware now
-    /// labware.location_id = location2.id;
-    /// let updated_labware = Labware::update(&labware, &mut connection);
+    ///     use labware::Labware;
+    ///     let mut connection = init_db("sqlite::memory:").await.unwrap();
+    ///     let mut labware = Labware::create("trac-1".to_string(), 1, &mut connection);
+    ///     let location_type = LocationType::create("Freezer".to_string(), &mut conn).await.unwrap();
+    ///     let location1 = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
+    ///     let location2 = Location::create("location1".to_string(), location_type.id, &mut conn).await.unwrap();
+    ///     // Update the labware now
+    ///     labware.location_id = location2.id;
+    ///     let updated_labware = Labware::update(&labware, &mut connection);
     /// # }
     pub(crate) async fn update(
         labware: &Labware,
         connection: &mut SqliteConnection,
-    ) -> Result<Labware, sqlx::Error> {
-        let update_labware_result = sqlx::query("UPDATE labwares SET location_id = ? WHERE id = ?")
-            .bind(labware.location_id)
-            .bind(labware.id)
-            .execute(&mut *connection)
-            .await?;
-        let id = update_labware_result.last_insert_rowid();
-
-        let location = sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE id = ?")
+    ) -> Result<Labware, LabwhereError> {
+        // Fetching the location first.
+        match sqlx::query_as::<_, Location>("SELECT * FROM locations WHERE id = ?")
             .bind(labware.location_id)
             .fetch_one(&mut *connection)
-            .await?;
-
-        Ok(Labware::new(
-            id as u32,
-            labware.barcode.clone(),
-            Some(&location),
-        ))
+            .await
+        {
+            // If we found the location
+            Ok(location) => {
+                match sqlx::query("UPDATE labwares SET location_id = ? WHERE id = ?")
+                    .bind(labware.location_id)
+                    .bind(labware.id)
+                    .execute(&mut *connection)
+                    .await
+                {
+                    Ok(result) => {
+                        let updated_rows = result.rows_affected();
+                        // If we do not find the labware.
+                        if updated_rows == 0 {
+                            return Err(LabwhereError::NotFound(NotFoundError {
+                                message: "Labware not found!".to_string(),
+                            }));
+                        }
+                        // If we found the labware
+                        Ok(Labware::new(
+                            result.last_insert_rowid() as u32,
+                            labware.barcode.clone(),
+                            Some(&location),
+                        ))
+                    }
+                    // Error from the database.
+                    Err(_) => Err(LabwhereError::ConnectivityError(ConnectivityError {
+                        message: "Error from the database!".to_string(),
+                    })),
+                }
+            }
+            // If we do not found the location
+            Err(_) => Err(LabwhereError::NotFound(NotFoundError {
+                message: "Location not found!".to_string(),
+            })),
+        }
     }
 
     /// Find labware by barcode
@@ -114,16 +153,16 @@ impl Labware {
     pub(crate) async fn find_by_barcode(
         barcode: String,
         connection: &mut SqliteConnection,
-    ) -> Result<Labware, NotFoundError> {
+    ) -> Result<Labware, LabwhereError> {
         match sqlx::query_as::<_, Labware>("SELECT * FROM labwares WHERE barcode = ?")
             .bind(barcode)
             .fetch_one(&mut *connection)
             .await
         {
             Ok(labware) => Ok(labware),
-            Err(_) => Err(NotFoundError {
+            Err(_) => Err(LabwhereError::NotFound(NotFoundError {
                 message: "Labware not found".to_string(),
-            }),
+            })),
         }
     }
 }
@@ -168,6 +207,47 @@ mod tests {
 
         assert_eq!(labware.barcode, "lw-1");
         assert_eq!(labware.location_id, location.id);
+    }
+
+    #[tokio::test]
+    async fn update_labware_location_that_doesnt_exist() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
+            .await
+            .unwrap();
+        let location = Location::create("lw-location-1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+        let mut labware = Labware::create("lw-1".to_string(), location.id, &mut conn)
+            .await
+            .unwrap();
+
+        labware.location_id = 3;
+
+        Labware::update(&labware, &mut conn)
+            .await
+            .expect_err("Location not found!");
+    }
+
+    #[tokio::test]
+    async fn update_labware_that_doesnt_exist() {
+        let mut conn = init_db("sqlite::memory:").await.unwrap();
+        let location_type = LocationType::create("Freezer".to_string(), &mut conn)
+            .await
+            .unwrap();
+        let location1 = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+        let location2 = Location::create("location1".to_string(), location_type.id, &mut conn)
+            .await
+            .unwrap();
+
+        // This labware is not persisted in the database.
+        let mut labware = Labware::new(100, "lw-20".to_string(), Some(&location1));
+        labware.location_id = location2.id;
+        Labware::update(&labware, &mut conn)
+            .await
+            .expect_err("Labware not found!");
     }
 
     #[tokio::test]

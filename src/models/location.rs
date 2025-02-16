@@ -1,10 +1,14 @@
-use crate::errors::NotFoundError;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sqlx::SqliteConnection;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use PartialEq;
+
+use crate::errors::database_error::ConnectivityError;
+use crate::errors::name_format_error::NameFormatError;
+use crate::errors::not_found_error::NotFoundError;
+use crate::errors::LabwhereError;
 
 /// The `UNKNOWN_LOCATION` constant is initialized only when it is first accessed.
 ///  This can save resources if the constant is not used during the execution of the program.
@@ -94,26 +98,40 @@ impl<'a> Location {
         name: String,
         location_type_id: u32,
         connection: &mut SqliteConnection,
-    ) -> Result<Location, sqlx::Error> {
-        let insert_query_result =
-            sqlx::query("INSERT INTO locations (name, location_type_id) VALUES (?, ?)")
-                .bind(name.clone())
-                .bind(location_type_id)
-                .execute(&mut *connection)
-                .await?;
-        let id = insert_query_result.last_insert_rowid();
-
-        let mut location = Location::new(id as u32, name.clone(), location_type_id, None).unwrap();
-        let barcode = location.create_barcode();
-
-        // Catch errors (if any) and handle
-        sqlx::query("UPDATE locations SET barcode = ? WHERE id = ?")
-            .bind(barcode)
-            .bind(id)
+    ) -> Result<Location, LabwhereError> {
+        match sqlx::query("INSERT INTO locations (name, location_type_id) VALUES (?, ?)")
+            .bind(name.clone())
+            .bind(location_type_id)
             .execute(&mut *connection)
-            .await?;
-
-        Ok(location)
+            .await
+        {
+            Ok(result) => {
+                let id = result.last_insert_rowid();
+                let mut location =
+                    Location::new(id as u32, name.clone(), location_type_id, None).unwrap();
+                let barcode = location.create_barcode();
+                match sqlx::query("UPDATE locations SET barcode = ? WHERE id = ?")
+                    .bind(barcode)
+                    .bind(id)
+                    .execute(&mut *connection)
+                    .await
+                {
+                    Ok(_) => Ok(location),
+                    Err(err) => Err(LabwhereError::ConnectivityError(ConnectivityError {
+                        message: format!(
+                            "Error updating the labware location: {}",
+                            err.to_string()
+                        ),
+                    })),
+                }
+            }
+            Err(err) => Err(LabwhereError::ConnectivityError(ConnectivityError {
+                message: format!(
+                    "Error inserting the location into the database: {}",
+                    err.to_string()
+                ),
+            })),
+        }
     }
 
     /// Find a location by barcode
@@ -188,26 +206,6 @@ impl Default for Location {
         }
     }
 }
-
-/// Error struct for containing name formatting errors
-struct NameFormatError {
-    /// Message contained within the exception
-    message: String,
-}
-
-impl Display for NameFormatError {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.message.to_string())
-    }
-}
-
-impl Debug for NameFormatError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message.to_string())
-    }
-}
-
-impl Error for NameFormatError {}
 
 #[cfg(test)]
 mod tests {

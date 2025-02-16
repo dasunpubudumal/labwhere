@@ -23,7 +23,6 @@ impl Scan {
     /// 3. Find the labware by its barcode `labware_barcode`.
     /// 4. If the labware exists, return it. If it doesn't exist, create the labware in the database.
     pub fn create(value: Value) -> Result<Scan, ()> {
-
         // TODO: Complete this function.
 
         Ok(Scan {
