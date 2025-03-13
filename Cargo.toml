@@ -3,11 +3,22 @@ name = "labwhere"
 version = "0.1.0"
 edition = "2018"
 
+[package.metadata.deb]
+maintainer = "PSD"
+copyright = "2017, Sanger"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+A simple subcommand for the Cargo package manager for \
+building Debian packages from Rust projects."""
+depends = "$auto"
+section = "utility"
+priority = "optional"
+
 [dependencies]
 regex = "1.11.0"
 once_cell = "1.21.0"
 tokio = { version = "1.44.1", features = ["full"] }
-sqlx = { version = "0.8.2", features = [ "runtime-tokio", "sqlite", "macros" ] }
+sqlx = { version = "0.8.3", features = [ "runtime-tokio", "sqlite", "macros" ] }
 hyper = "1.5.2"
 http-body-util = "0.1.3"
 hyper-util = { version = "0.1", features = ["full"] }
